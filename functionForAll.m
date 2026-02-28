@@ -1,19 +1,26 @@
-function [x_next, u_opt, J_opt, MILP_status, MILP_extras] = Assignment_Draft_function(Np, xk, Parameters)
+function [x_next, u_opt, J_opt] = functionForAll(Np, xk, parameters, u)
+
+arguments
+    Np 
+    xk 
+    parameters 
+    u = -1
+end
 %% Expand parameters
 xcon_init = xk(1);
 xaux_init = xk(2);
-x_max = Parameters.x_max;
-N_max_gr = Parameters.N_max_gr;
-gamma0 = Parameters.gamma0;
-gamma1 = Parameters.gamma1; 
-gamma2 = Parameters.gamma2;
+x_max = parameters.x_max;
+N_max_gr = parameters.N_max_gr;
+gamma0 = parameters.gamma0;
+gamma1 = parameters.gamma1; 
+gamma2 = parameters.gamma2;
 
-x_eff = Parameters.x_eff;
-psi = Parameters.psi;
-a1 = Parameters.A(1); a2 = Parameters.A(2); a3 = Parameters.A(3);
-b1 = Parameters.B(1); b2 = Parameters.B(2); b3 = Parameters.B(3);
+x_eff = parameters.x_eff;
+psi = parameters.psi;
+a1 = parameters.A(1); a2 = parameters.A(2); a3 = parameters.A(3);
+b1 = parameters.B(1); b2 = parameters.B(2); b3 = parameters.B(3);
 
-lambda = Parameters.lambda;
+lambda = parameters.lambda;
 
 Mu = 2; mu = 0; Mcon = 70; mcon = 0; Maux = N_max_gr; maux = 0; eps = 10^-3;
 
@@ -214,8 +221,6 @@ Acon(22) = a1; Acon(23) = a2; Acon(24) = a3; Acon(25) = psi;
 
 Aaux(2) = 1; Aaux(19) = 1; Aaux(20) = 1;
 
-signs3=char(zeros(Np*2, 1)); signs3(:) = 'S';
-
 
 A3con = zeros(Np, Nx); A3aux = zeros(Np, Nx);
 
@@ -224,10 +229,21 @@ for i=1:Np
     A3con(i,(i-1)*25+1:i*25+1) = [Acon -1];
     A3aux(i,(i-1)*25+1:i*25+2) = [Aaux 0 -1];
 end
+
 A3 = [A3con ; A3aux];
+
+% Add u functionality (Forced action for real system)
 B3 = zeros(size(A3, 1),1);
+if u ~= -1
+    A3 = [A3; 0 0 1 zeros(1,size(A3,2)-3)];
+    B3 = [B3; u];
+end
+
+signs3=char(zeros(size(A3,1), 1)); signs3(:) = 'S';
+
 %% Cost function
 
+%{
 C = zeros(1,Nx);
 
 for i = 1:7
@@ -243,6 +259,14 @@ for i = 1:7
         end
     end
 end
+%}
+
+Cset = zeros(1,25);
+Cset(24) = 1; % xk+1
+Cset(2) = gamma0 * lambda; % mode 0
+Cset(12) = gamma1 * lambda; % mode 1
+Cset(19) = gamma2 * lambda; % mode 2
+C = [0 0 kron(ones(1,Np), Cset)];
 
 %% Initial Conditions
 
@@ -277,5 +301,4 @@ UB = 100*ones(Nx, 1); LB = -100*ones(Nx,1);
 
 [xopt, J_opt, MILP_status, MILP_extras] = glpk(C, Atotal, Btotal, LB, UB, signsTotal, variableTypeList, 1);
 u_opt = xopt(3); x_next = xopt(26:27);
-
 end
