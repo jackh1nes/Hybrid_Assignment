@@ -14,6 +14,10 @@ b1 = parameters.B(1); b2 = parameters.B(2); b3 = parameters.B(3);
 
 lambda = parameters.lambda;
 
+if u ~= -1
+    Np = 1;
+end
+
 Mu = 2; mu = 0; Mcon = 70; mcon = 0; Maux = N_max_gr; maux = 0; eps = 10^-3;
 
 Nx = Np*26+2;
