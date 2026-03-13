@@ -266,7 +266,7 @@ signs3=char(zeros(size(A3,1), 1)); signs3(:) = 'S';
 %% Cost function
 
 Cset = zeros(1,26);
-Cset(24) = 1; % xk+1
+Cset(25) = 1; % xk+1
 Cset(2) = gamma0 * lambda; % mode 0
 Cset(12) = gamma1 * lambda; % mode 1
 Cset(19) = gamma2 * lambda; % mode 2
@@ -282,7 +282,7 @@ signsinit = ['S'; 'S'];
 
 %% Boundary condition (x_max)
 A_xconmax = zeros(1,26); A_xconmax(25) = 1; A_xconmax = [zeros(Np,2) kron(eye(Np), A_xconmax)];
-B_xconmax = x_max; 
+B_xconmax = x_max * ones(Np,1); 
 signs_xconmax = kron(ones(Np,1), 'U');
 
 %% Together
