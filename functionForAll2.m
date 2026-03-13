@@ -1,5 +1,4 @@
-function [x_next, u_opt, J_opt] = functionForAll(Np, xk, parameters, u)
-%% Expand parameters
+function [x_next, u_opt, J_opt] = functionForAll2(Np, xk, parameters,u)
 xcon_init = xk(1);
 xaux_init = xk(2);
 x_max = parameters.x_max;
@@ -19,9 +18,8 @@ Mu = 2; mu = 0; Mcon = 70; mcon = 0; Maux = N_max_gr; maux = 0; eps = 10^-3;
 
 Nx = Np*26+2;
 
-%% Inequalities - delta and z definitions
-
-A1 = zeros(67, 26); B1 = zeros(67,1); signs = char(zeros(67,1)); 
+%Inequalities - delta and z definitions
+A1 = zeros(66, 26); B1 = zeros(66,1); signs = char(zeros(66,1)); 
 
 i=0;
 % delta0
@@ -69,10 +67,11 @@ i = i+1; A1(i,4) = 1; A1(i,7) = 1; A1(i,9) = 1; A1(i,12) = -1; B1(i) = 2; signs(
 i = i+1; A1(i,3) = 1; A1(i,13) = Mu-1; B1(i) = Mu; signs(i) = 'U';
 i = i+1; A1(i,3) = 1; A1(i, 13) = -(mu-1-eps); B1(i) = eps + 1; signs(i) = 'L';
 
-% delta 1 - 2xAND
+% delta 1 - 3xAND
 i = i+1; A1(i, 5) = -1; A1(i,14) = 1; B1(i) = 0; signs(i) = 'U'; 
 i = i+1; A1(i, 13) = -1; A1(i,14) = 1; B1(i) = 0; signs(i) = 'U'; 
-i = i+1; A1(i,5) = 1; A1(i,13) = 1; A1(i,14) = -1; B1(i) = 1; signs(i) = 'U';
+i = i+1; A1(i,18) = -1; A1(i,14) = 1; B1(i) =0; signs(i) = 'U';
+i = i+1; A1(i,5) = 1; A1(i,13) = 1; A1(i,18) = 1; A1(i,14) = -1; B1(i) = 2; signs(i) = 'U';
 
 % delta 1n - not
 i = i+1; A1(i,14) = 1; A1(i, 15) = 1; B1(i) = 1; signs(i) = 'U';
@@ -90,19 +89,17 @@ i = i+1; A1(i,16) = -1; A1(i, 17) = -1; B1(i) = -1; signs(i) = 'U';
 i = i+1; A1(i,2) = 1; A1(i, 18) = Maux-N_max_gr + eps; B1(i) = Maux; signs(i) = 'U';
 i = i+1; A1(i,2) = 1; A1(i,18) = -(mcon-N_max_gr-eps); B1(i) = N_max_gr; signs(i) = 'L';
 
-% delta 1,1 - 3xAND
+% delta 1,1 - 2xAND
 i = i+1; A1(i, 14) = -1; A1(i,19) = 1; B1(i) = 0; signs(i) = 'U'; 
 i = i+1; A1(i, 16) = -1; A1(i,19) = 1; B1(i) = 0; signs(i) = 'U'; 
-i = i+1; A1(i, 18) = -1; A1(i,19) = 1; B1(i) = 0; signs(i) = 'U'; 
-i = i+1; A1(i,14) = 1; A1(i,16) = 1; A1(i,18) = 1; A1(i,19) = -1; B1(i) = 2; signs(i) = 'U';
+i = i+1; A1(i,14) = 1; A1(i,16) = 1; A1(i,19) = -1; B1(i) = 1; signs(i) = 'U';
 
-% delta 1,2 - 3xAND
+% delta 1,2 - 2xAND
 i = i+1; A1(i, 14) = -1; A1(i,20) = 1; B1(i) = 0; signs(i) = 'U'; 
 i = i+1; A1(i, 17) = -1; A1(i,20) = 1; B1(i) = 0; signs(i) = 'U'; 
-i = i+1; A1(i, 18) = -1; A1(i,20) = 1; B1(i) = 0; signs(i) = 'U'; 
-i = i+1; A1(i,14) = 1; A1(i,17) = 1; A1(i,18) = 1; A1(i,20) = -1; B1(i) = 2; signs(i) = 'U';
+i = i+1; A1(i,14) = 1; A1(i,17) = 1; A1(i,20) = -1; B1(i) = 1; signs(i) = 'U';
 
-% delta 1 - 2xAND
+% delta 2 - 2xAND
 i = i+1; A1(i, 5) = -1; A1(i,21) = 1; B1(i) = 0; signs(i) = 'U'; 
 i = i+1; A1(i, 15) = -1; A1(i,21) = 1; B1(i) = 0; signs(i) = 'U'; 
 i = i+1; A1(i,5) = 1; A1(i,15) = 1; A1(i,21) = -1; B1(i) = 1; signs(i) = 'U';
@@ -216,13 +213,13 @@ A1(i,2) = -1; A1(i,21) = -maux; A1(i,26) = 1;
 B1(i) = -maux;
 signs(i) = 'U';
 % 67
-i = i+1;
+i = i+1; 
 A1(i,2) = -1; A1(i,21) = -Maux; A1(i,26) = 1;
 B1(i) = -Maux;
 signs(i) = 'L';
 %---end
-%% Inequalities - State solution definition
 
+%Inequalities - State solution definition
 Acon = zeros(1,26); Aaux = zeros(1,26);
 Acon(10) = b1; Acon(11) = b2; Acon(12) = b3; Acon(20) = -psi*x_eff;
 Acon(22) = a1; Acon(23) = a2; Acon(24) = a3; Acon(25) = psi;
@@ -261,8 +258,7 @@ end
 
 signs3=char(zeros(size(A3,1), 1)); signs3(:) = 'S';
 
-%% Cost function
-
+%Cost function
 Cset = zeros(1,26);
 Cset(25) = 1; % xk+1
 Cset(2) = gamma0 * lambda; % mode 0
@@ -270,21 +266,21 @@ Cset(12) = gamma1 * lambda; % mode 1
 Cset(19) = gamma2 * lambda; % mode 2
 C = [0 0 kron(ones(1,Np), Cset)];
 
-%% Initial Conditions
-
+%Initial Conditions
 A_xconinit = [1 zeros(1,Nx-1)];
 A_xauxinit = [0 1 zeros(1,Nx-2)];
 A_init = [A_xconinit; A_xauxinit]; B_init = [xcon_init; xaux_init];
 signsinit = ['S'; 'S'];
 
-
-%% Boundary condition (x_max)
+%Boundary condition (x_max)
 A_xconmax = zeros(1,26); A_xconmax(25) = 1; A_xconmax = [zeros(Np,2) kron(eye(Np), A_xconmax)];
 B_xconmax = x_max * ones(Np,1); 
-signs_xconmax = kron(ones(Np,1), 'U');
+signs_xconmax = [];
+for i = 1:Np
+    signs_xconmax = [signs_xconmax; 'U'];
+end
 
-%% Together
-
+%Together
 % Constructing total delta/z definitions across Np
 A1big = kron(eye(Np), A1);
 A1big = [A1big zeros(size(A1big, 1), 2)];
