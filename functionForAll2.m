@@ -19,11 +19,11 @@ if u ~= -1
 end
 
 Mu = 2; mu = 0; Mcon = 70; mcon = 0; Maux = N_max_gr; maux = 0; eps = 10^-3;
-
-Nx = Np*26+2;
+nx = 27; % new - number of states in extended state vector
+Nx = Np*nx+2;
 
 %Inequalities - delta and z definitions
-A1 = zeros(66, 26); B1 = zeros(66,1); signs = char(zeros(66,1)); 
+A1 = zeros(69, nx); B1 = zeros(69,1); signs = char(zeros(69,1)); 
 
 i=0;
 % delta0
@@ -103,10 +103,15 @@ i = i+1; A1(i, 14) = -1; A1(i,20) = 1; B1(i) = 0; signs(i) = 'U';
 i = i+1; A1(i, 17) = -1; A1(i,20) = 1; B1(i) = 0; signs(i) = 'U'; 
 i = i+1; A1(i,14) = 1; A1(i,17) = 1; A1(i,20) = -1; B1(i) = 1; signs(i) = 'U';
 
+% delta 2a TEMP (INDEX 27)
+i = i+1; A1(i, 3) = -1; A1(i,27) = 2-mu; B1(i) = -mu; signs(i) = 'U'; % new
+i = i+1; A1(i,3) = 1; A1(i,27) = 2-Mu-eps; B1(i) = 2-eps; signs(i) = 'U'; % new
+
 % delta 2 - 2xAND
 i = i+1; A1(i, 5) = -1; A1(i,21) = 1; B1(i) = 0; signs(i) = 'U'; 
 i = i+1; A1(i, 15) = -1; A1(i,21) = 1; B1(i) = 0; signs(i) = 'U'; 
-i = i+1; A1(i,5) = 1; A1(i,15) = 1; A1(i,21) = -1; B1(i) = 1; signs(i) = 'U';
+i = i+1; A1(i,27) = -1; A1(i,21) = 1; B1(i) = 0; signs(i) = 'U'; % new
+i = i+1; A1(i,5) = 1; A1(i,15) = 1; A1(i,27) = 1; A1(i,21) = -1; B1(i) = 2; signs(i) = 'U'; % changed
 
 % start z1
 % 48
@@ -224,7 +229,7 @@ signs(i) = 'L';
 %---end
 
 %Inequalities - State solution definition
-Acon = zeros(1,26); Aaux = zeros(1,26);
+Acon = zeros(1,nx); Aaux = zeros(1,nx);
 Acon(10) = b1; Acon(11) = b2; Acon(12) = b3; Acon(20) = -psi*x_eff;
 Acon(22) = a1; Acon(23) = a2; Acon(24) = a3; Acon(25) = psi;
 
@@ -235,8 +240,8 @@ A3con = zeros(Np, Nx); A3aux = zeros(Np, Nx);
 
 % Define
 for i=1:Np
-    A3con(i,(i-1)*26+1:i*26+1) = [Acon -1];
-    A3aux(i,(i-1)*26+1:i*26+2) = [Aaux 0 -1];
+    A3con(i,(i-1)*nx+1:i*nx+1) = [Acon -1];
+    A3aux(i,(i-1)*nx+1:i*nx+2) = [Aaux 0 -1];
 end
 
 A3 = [A3con ; A3aux];
@@ -244,17 +249,6 @@ A3 = [A3con ; A3aux];
 % Add u functionality (Forced action for real system)
 B3 = zeros(size(A3, 1),1);
 
-%{
-A_uConstraints=[]; B_uConstraints = []; signs_uConstraints = [];
-if size(u,1) ~= 1 % is u a vector?
-    A_uConstraints = zeros(Np, 2+Np*25);
-    B_uConstraints = zeros(Np,1);
-    for i = 1:Np % across all time steps in Np, u = Np x 1
-        A_uConstraints(i, 25*(i-1)+1:25*i) = [0 0 1 zeros(1,22)];
-        B_uConstraints(i) = u(i);
-    end
-    signs_uConstraints = 'S'; signs_uConstraints = kron(ones(Np,1), signs_uConstraints);
-%}
 if u ~= -1
     A3 = [A3; 0 0 1 zeros(1,size(A3,2)-3)];
     B3 = [B3; u];
@@ -263,7 +257,7 @@ end
 signs3=char(zeros(size(A3,1), 1)); signs3(:) = 'S';
 
 %Cost function
-Cset = zeros(1,26);
+Cset = zeros(1,nx);
 Cset(25) = 1; % xk+1
 Cset(2) = gamma0 * lambda; % mode 0
 Cset(12) = gamma1 * lambda; % mode 1
@@ -277,7 +271,7 @@ A_init = [A_xconinit; A_xauxinit]; B_init = [xcon_init; xaux_init];
 signsinit = ['S'; 'S'];
 
 %Boundary condition (x_max)
-A_xconmax = zeros(1,26); A_xconmax(25) = 1; A_xconmax = [zeros(Np,2) kron(eye(Np), A_xconmax)];
+A_xconmax = zeros(1,nx); A_xconmax(nx-1) = 1; A_xconmax = [zeros(Np,2) kron(eye(Np), A_xconmax)];
 B_xconmax = x_max * ones(Np,1); 
 signs_xconmax = [];
 for i = 1:Np
@@ -292,22 +286,28 @@ B1 = kron(ones(Np,1), B1);
 bigSigns = kron(ones(Np,1), signs);
 
 % Building variable types across Np
-variableType = ['C', 'C', 'I', 'B',  'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'C', 'C', 'C', 'C', 'C']';
+variableType = ['C', 'C', 'I', 'B',  'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'C', 'C', 'C', 'C', 'C', 'B']';
 variableTypeList = [];
 for i=1:Np
     variableTypeList = [variableTypeList; variableType];
 end
 variableTypeList = [variableTypeList; 'C'; 'C'];
 
+% Enforcing exactly 1 state at each time instance
+Astate = zeros(1,nx); Astate(4) = 1; Astate(14) = 1; Astate(21) = 1; bstate = 1; signsState = [];
+Astate = kron(eye(Np), Astate); Astate = [Astate zeros(Np,2)]; bstate = bstate * ones(Np,1); for i = 1:Np signsState = [signsState; 'S']; end
 
 % In total then
-Atotal = [A1big; A3; A_init; A_xconmax]; 
-signsTotal = [bigSigns; signs3; signsinit; signs_xconmax];
-Btotal = [B1; B3; B_init; B_xconmax];
+Atotal = [A1big; A3; A_init; A_xconmax; Astate]; 
+signsTotal = [bigSigns; signs3; signsinit; signs_xconmax; signsState];
+Btotal = [B1; B3; B_init; B_xconmax; bstate];
 
 % Upper Bounds / Lower Bounds (just for simulation)
 UB = 100*ones(Nx, 1); LB = -100*ones(Nx,1);
 
 [xopt, J_opt, MILP_status, MILP_extras] = glpk(C, Atotal, Btotal, LB, UB, signsTotal, variableTypeList, 1);
-u_opt = xopt(3); x_next = xopt(27:28);
+if MILP_status ~= 5
+    J_opt = 10^6;
+end
+u_opt = xopt(3); x_next = xopt(28:29);
 end
